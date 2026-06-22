@@ -25,6 +25,7 @@ const ENDPOINT_CONFIGS = [
   {
     path: './endpoints/onboarding/',
   },
+  { path: './endpoints/creator-cards/' },
 ];
 
 function logEndpointMetaData(endpointConfigs) {
@@ -32,13 +33,19 @@ function logEndpointMetaData(endpointConfigs) {
   const storageDirName = './endpoint-data';
   const EXEMPTED_ENDPOINTS_REGEX = /onboarding/;
 
+  console.log('Logging endpoint metadata...');
   endpointConfigs.forEach((endpointConfig) => {
     const { path: basePath, options } = endpointConfig;
 
     const dirs = fs.readdirSync(basePath);
+    console.log(`Processing endpoints in ${basePath}...`);
 
     dirs.forEach((file) => {
       const handler = require(`${basePath}${file}`);
+      console.log(
+        `Found handler for ${handler.method} ${handler.path} with middlewares:`,
+        handler.middlewares
+      );
 
       if (!EXEMPTED_ENDPOINTS_REGEX.test(basePath) && handler.middlewares?.length) {
         const entry = { method: handler.method, endpoint: handler.path };
@@ -50,6 +57,7 @@ function logEndpointMetaData(endpointConfigs) {
           entry.name = `${entry.name} (${options.pathPrefix.replace('/', '')})`;
         }
 
+        console.log(`Adding endpoint metadata for ${entry.method} ${entry.endpoint}`);
         endpointData.push(entry);
       }
     });
@@ -83,6 +91,7 @@ function setupEndpointHandlers(basePath, options = {}) {
 }
 
 ENDPOINT_CONFIGS.forEach((config) => {
+  // console.log(`Setting up endpoints for ${config.path} with options`, config.options);
   setupEndpointHandlers(config.path, config.options);
 });
 

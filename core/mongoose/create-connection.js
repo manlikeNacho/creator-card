@@ -20,7 +20,7 @@ const mongoose = require('mongoose');
 async function createConnection(connectionConfig) {
   const connectionResult = {};
   const { uri = process.env.MONGODB_URI, isNotDefault } = connectionConfig;
-  console.log('Creating mongoose connection with config', { uri, isNotDefault });
+  // console.log('Creating mongoose connection with config', { uri, isNotDefault });
   if (uri) {
     const connectionOptions = {
       family: 4,
@@ -38,7 +38,7 @@ async function createConnection(connectionConfig) {
         ({ connection } = await mongoose.connect(uri, connectionOptions));
       }
       connectionResult.connection = connection;
-      console.log('Mongoose connection established');
+      // console.log('Mongoose connection established');
     } catch (e) {
       // Todo: Proper handler?
       throw new Error(e.message);

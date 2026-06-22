@@ -18,7 +18,7 @@ const expressEnums = require('./enums');
  * @returns
  */
 function Server(serverConfig = {}) {
-  console.log('Initializing server with config');
+  // console.log('Initializing server with config');
   const express = require('express');
   const { appLogger } = require('@app-core/logger');
   const { ERROR_STATUS_CODE_MAPPING } = require('@app-core/errors');
@@ -276,6 +276,7 @@ function Server(serverConfig = {}) {
   }
 
   function startServer() {
+    // console.log('Starting server with config');
     app.use((_, res, __) => {
       // Global 404 Catcher
       res.status(404).json({
@@ -291,8 +292,11 @@ function Server(serverConfig = {}) {
         message: 'Some error occurred.',
       });
     });
+
+    // appLogger.info(`Server listening at port ${port}`);
     app.listen(port, () => {
-      appLogger(`Listening at port ${port}`);
+      // console.log(`Server listening at port ${port}`);
+      appLogger.info(`Listening at port ${port}`);
     });
   }
 
