@@ -21,6 +21,7 @@ const config = require('./config');
  */
 const createdQueues = new Map();
 function createQueue(connectionConfig = config) {
+  console.log('Creating Bull queue with config', connectionConfig);
   const { queueName, url } = connectionConfig;
   if (createdQueues.has(queueName)) {
     return createdQueues.get(queueName);

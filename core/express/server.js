@@ -18,6 +18,7 @@ const expressEnums = require('./enums');
  * @returns
  */
 function Server(serverConfig = {}) {
+  console.log('Initializing server with config');
   const express = require('express');
   const { appLogger } = require('@app-core/logger');
   const { ERROR_STATUS_CODE_MAPPING } = require('@app-core/errors');
@@ -246,6 +247,7 @@ function Server(serverConfig = {}) {
         responseComponents.body.message = error.isApplicationError
           ? error.message
           : 'Some error occured.';
+        responseComponents.body.code = error.isApplicationError ? error.errorCode : undefined; // ADD THIS
         responseComponents.body.errors = error.details || undefined;
         responseComponents.body.data = error.context;
 
