@@ -5,12 +5,12 @@ const CreatorCard = require('@app/repository/creator-card');
 const CreatorCardMessages = require('@app/messages/creator-card');
 
 const spec = `root {
-  creator_reference string<trim|length:1,20>
-  access_code? string<trim>
+  slug string<trim>
+  creator_reference string<trim|length:20>
 }`;
 const parsedSpec = validator.parse(spec);
 
-function serializePublicCard(record) {
+function serializeCard(record) {
   return {
     id: record._id,
     title: record.title,
@@ -21,7 +21,7 @@ function serializePublicCard(record) {
     service_rates: record.service_rates || null,
     status: record.status,
     access_type: record.access_type,
-    // access_code intentionally omitted — never returned publicly
+    access_code: record.access_code ?? null,
     created: record.created,
     updated: record.updated,
     deleted: record.deleted || null,
@@ -33,20 +33,37 @@ async function deleteCreatorCardBySlug(serviceData, options = {}) {
   let response;
 
   try {
-    // Rule order: NF01 -> NF02 -> AC03 -> AC04
-    const card = await CreatorCard.findOne({ query: { slug: data.slug } });
+    // Find by slug — use raw query to bypass paranoid filter so we can check deleted state
+    const card = await CreatorCard.findOne({
+      query: { slug: data.slug },
+      options: { lean: true },
+    });
 
+    // Rule: card does not exist
     if (!card) {
       throwAppError(CreatorCardMessages.CARD_NOT_FOUND, ERROR_CODE.NF01);
     }
 
-    if (card.deleted) {
-      throwAppError(CreatorCardMessages.CARD_ALREADY_DELETED, ERROR_CODE.NF02);
+    // Rule: card is already soft-deleted — treat as not found
+    if (card.deleted && card.deleted !== 0) {
+      throwAppError(CreatorCardMessages.CARD_NOT_FOUND, ERROR_CODE.NF01);
     }
 
+    // Rule: creator_reference must match
+    if (card.creator_reference !== data.creator_reference) {
+      throwAppError(CreatorCardMessages.CREATOR_REFERENCE_MISMATCH, ERROR_CODE.INVLDDATA);
+    }
+
+    // Perform soft delete
     await CreatorCard.deleteOne({ query: { slug: data.slug } });
 
-    response = serializePublicCard(card);
+    // Re-fetch the deleted record so we return accurate deleted timestamp
+    const deletedCard = await CreatorCard.findOne({
+      query: { slug: data.slug },
+      options: { lean: true },
+    });
+
+    response = serializeCard(deletedCard || { ...card, deleted: Date.now() });
   } catch (error) {
     appLogger.errorX(error, 'delete-creator-card-by-slug-error');
     throw error;

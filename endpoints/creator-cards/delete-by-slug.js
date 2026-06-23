@@ -1,5 +1,5 @@
 const { createHandler } = require('@app-core/server');
-const { deleteCreatorCardBySlug } = require('@app/services/creator-card/delete-by-slug');
+const deleteCreatorCardBySlug = require('@app/services/creator-card/delete-by-slug');
 const logRequest = require('@app/middlewares/log-request');
 
 module.exports = createHandler({
@@ -7,12 +7,16 @@ module.exports = createHandler({
   method: 'delete',
   middlewares: [logRequest],
   async handler(rc, helpers) {
-    const payload = { slug: rc.params.slug, access_code: rc.query.access_code };
+    const payload = {
+      slug: rc.params.slug,
+      creator_reference: rc.body.creator_reference,
+    };
+
     const response = await deleteCreatorCardBySlug(payload);
 
     return {
       status: helpers.http_statuses.HTTP_200_OK,
-      message: 'Creator card deleted',
+      message: 'Creator Card Deleted Successfully.',
       data: response,
     };
   },

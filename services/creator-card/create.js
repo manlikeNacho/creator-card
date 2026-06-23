@@ -79,7 +79,6 @@ function resolveAccessControl(data) {
   }
 
   if (data.access_code && !ACCESS_CODE_REGEX.test(data.access_code)) {
-    // not in the official table — generic 400 is fine here
     throwAppError(CreatorCardMessages.INVALID_ACCESS_CODE_FORMAT, ERROR_CODE.VALIDATIONERR);
   }
 
@@ -92,7 +91,7 @@ async function resolveSlug(data) {
       throwAppError(CreatorCardMessages.INVALID_SLUG_FORMAT, ERROR_CODE.VALIDATIONERR);
     }
 
-    const existing = await CreatorCard.findOne({ query: { slug: data.slug } });
+    const existing = await CreatorCard.findOne({ query: { slug: data.slug, deleted: 0 } });
     if (existing) {
       throwAppError(CreatorCardMessages.SLUG_TAKEN, ERROR_CODE.SL02);
     }

@@ -21,7 +21,7 @@ function serializePublicCard(record) {
     service_rates: record.service_rates || null,
     status: record.status,
     access_type: record.access_type,
-    // access_code intentionally omitted — never returned publicly
+    // access_code intentionally omitted — never returned on public retrieval
     created: record.created,
     updated: record.updated,
     deleted: record.deleted || null,
@@ -33,21 +33,34 @@ async function getCreatorCardBySlug(serviceData, options = {}) {
   let response;
 
   try {
-    // Rule order: NF01 -> NF02 -> AC03 -> AC04
-    const card = await CreatorCard.findOne({ query: { slug: data.slug } });
+    // Query without paranoid filter so we can detect soft-deleted cards
+    const card = await CreatorCard.findOne({
+      query: { slug: data.slug },
+      options: { lean: true },
+    });
 
+    // Rule 1: card does not exist at all
     if (!card) {
       throwAppError(CreatorCardMessages.CARD_NOT_FOUND, ERROR_CODE.NF01);
     }
 
+    // Rule 1b: card has been soft-deleted — treat as not found (NF01)
+    if (card.deleted && card.deleted !== 0) {
+      throwAppError(CreatorCardMessages.CARD_NOT_FOUND, ERROR_CODE.NF01);
+    }
+
+    // Rule 2: card exists but is a draft
     if (card.status === 'draft') {
       throwAppError(CreatorCardMessages.CARD_NOT_FOUND, ERROR_CODE.NF02);
     }
 
+    // Rule 3: card is private — access_code required
     if (card.access_type === 'private') {
       if (!data.access_code) {
         throwAppError(CreatorCardMessages.ACCESS_CODE_REQUIRED_FOR_VIEW, ERROR_CODE.AC03);
       }
+
+      // Rule 4: access_code provided but wrong
       if (data.access_code !== card.access_code) {
         throwAppError(CreatorCardMessages.INVALID_ACCESS_CODE, ERROR_CODE.AC04);
       }
